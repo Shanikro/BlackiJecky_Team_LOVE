@@ -20,7 +20,7 @@ RANK_NAMES = {
 
 class Card:
     
-    def __init__(self, rank: int, suit: str):
+    def __init__(self, rank: int, suit: int):
         self.rank = rank
         self.suit = suit
     
@@ -40,9 +40,9 @@ class Deck:
     def reset(self):
         # reset the deck
         self.cards = []
-        for suit in range(4):  # 4 suits
+        for suit_idx in range(4):  # 4 suits
             for rank in range(1, 14):  # ranks 1-13
-                self.cards.append(Card(rank, suit))
+                self.cards.append(Card(rank, suit_idx))
         self.shuffle()
     
     def shuffle(self):
@@ -57,7 +57,7 @@ class Deck:
 
 
 class Hand:
-    def _init_(self):
+    def __init__(self):
         self.cards = [] # list of cards in the hand
         self.total_value = 0 # total value of the hand
         

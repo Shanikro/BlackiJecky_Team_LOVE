@@ -11,6 +11,8 @@ class GameUI:
     def __init__(self):
         self.player_cards = []
         self.dealer_cards = []
+        self.player_sum = 0
+        self.dealer_sum = 0
 
     def card_ui_formatter(self, card: Card):
         """Format a single card into lines."""
@@ -46,29 +48,39 @@ class GameUI:
             line_parts = [card_lines[i][line_idx] for i in range(len(cards))]
             print("  ".join(line_parts))  # Join with 2 spaces between cards
 
-    def add_player_card(self, card: Card, player_sum: int, dealer_sum: int, round_num: int):
+    def add_player_card(self, card: Card, round_num: int):
         self.player_cards.append(card)
+        self.player_sum += card.get_value()
+        self._print_game_state(round_num)
+
+    def add_dealer_card(self, card: Card, round_num: int):
+        self.dealer_cards.append(card)
+        self.dealer_sum += card.get_value()
+        self._print_game_state(round_num)
+    
+    def _print_game_state(self, round_num: int):
+
+        # Only print if player has at least 2 cards and dealer has at least 1 card
+        if len(self.player_cards) < 2 or len(self.dealer_cards) < 1:
+            return
+        
         print("\n" + "─"*50)
-        print(f"  🎴 Round {round_num} - Your Turn 🎴")
+        print(f"  🎴 Round {round_num} 🎴")
         print("─"*50)
+        
+        # Print player cards
         print("\n  👤 YOUR CARDS:")
         self.print_cards_side_by_side(self.player_cards)
-        print(f"\n  📊 Your sum: {player_sum}")
-        print(f"  🎰 Dealer sum: {dealer_sum}")
-        print("─"*50 + "\n")
-
-    def add_dealer_card(self, card: Card, dealer_sum: int, player_sum: int, round_num: int):
-        self.dealer_cards.append(card)
-        print("\n" + "─"*50)
-        print(f"  🎴 Round {round_num} - Dealer's Turn 🎴")
-        print("─"*50)
+        print(f"  📊 Your sum: {self.player_sum}")
+        
+        # Print dealer cards
         print("\n  🎰 DEALER'S CARDS:")
         self.print_cards_side_by_side(self.dealer_cards)
-        print(f"\n  🎰 Dealer sum: {dealer_sum}")
-        print(f"  👤 Your sum: {player_sum}")
+        print(f"  🎰 Dealer sum: {self.dealer_sum}")
+        
         print("─"*50 + "\n")
     
-    def print_result(self, round_result: int, player_sum: int, dealer_sum: int, round_num: int):
+    def print_result(self, round_result: int, round_num: int):
         
         # Determine result message and emoji
         if round_result == BlackjackGame.ROUND_RESULT.PLAYER_WINS:
@@ -93,13 +105,13 @@ class GameUI:
         # Print player cards and sum
         print("  👤 YOUR HAND:")
         self.print_cards_side_by_side(self.player_cards)
-        print(f"  📊 Your sum: {player_sum}")
+        print(f"  📊 Your sum: {self.player_sum}")
         print()
         
         # Print dealer cards and sum
         print("  🎰 DEALER'S HAND:")
         self.print_cards_side_by_side(self.dealer_cards)
-        print(f"  📊 Dealer sum: {dealer_sum}")
+        print(f"  📊 Dealer sum: {self.dealer_sum}")
         print()
         
         # Print final result with style

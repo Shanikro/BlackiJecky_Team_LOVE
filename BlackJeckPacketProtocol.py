@@ -95,7 +95,7 @@ def encode_server_payload(result: int, rank: int, suit: int) -> bytes:
         MSG_PAYLOAD,
         result,
         rank,
-        suit #TODO: convert suit to string
+        suit
     )
 
 def decode_server_payload(data: bytes):

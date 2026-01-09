@@ -8,8 +8,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from UDPBroadcast import listen_for_offer
-from BlackJeckPacketProtocol import decode_server_payload, encode_request
-from BlackJeckLogic import BlackjackGame, Card
+from BlackJeckPacketProtocol import decode_server_payload, encode_request, encode_client_payload, SERVER_PAYLOAD_SIZE
+from BlackJeckLogic import BlackjackGame, Card, SUITS
 from GameUI import GameUI
 
 RESULT_NOT_OVER = BlackjackGame.ROUND_RESULT.NOT_OVER
@@ -41,7 +41,7 @@ def main():
     
     print("BlackJeckClient started")
     
-    try:
+    try: # TODO:לחזור על הפונקציה ולראות שלא סתם עושה מלא דברים 
         while True:
             sock = None
             try:
@@ -77,6 +77,8 @@ def main():
                 sock.sendall(encode_request(num_rounds, team_name)) # send the request to the server
 
                 play_game(sock, server_name, team_name, num_rounds)
+
+                #TODO: להוסיף את שלב 10 מהעבודה
                 
             except KeyboardInterrupt:
                 print("\nInterrupted. Returning to listen for offers...")
@@ -95,75 +97,72 @@ def main():
         signal_handler(None, None)
 
 
+def recv_exact(sock: socket.socket, size: int) -> bytes: # TODO: לבדוק מה זה עושה
+    """Receive exactly 'size' bytes from the socket."""
+    data = b''
+    while len(data) < size:
+        chunk = sock.recv(size - len(data))
+        if not chunk:
+            raise ConnectionError("Connection closed unexpectedly")
+        data += chunk
+    return data
+
+
 def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds: int):
-    # initialize the UI
-    UI = GameUI()
 
     for round_num in range(1, num_rounds + 1):
-        player_sum = 0
-        dealer_sum = 0
+        # initialize the UI (init also the player and dealer sums)
+        UI = GameUI()
 
         # receive the first two cards from the server
         for _ in range(2):
-            data = sock.recv(1024)
-            round_result, rank, suit = decode_server_payload(data)
-            player_sum += get_card_value(rank)
-            UI.add_player_card(Card(rank, suit), player_sum, dealer_sum)
+            data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
+            round_result, rank, suit_idx = decode_server_payload(data)
+            UI.add_player_card(Card(rank, suit_idx), round_num)
 
         # Check if the player has bust
         if round_result == RESULT_LOSS:
-            UI.print_result(round_result, player_sum, dealer_sum, round_num)
+            UI.print_result(round_result, round_num)
             continue
 
         # receive the dealer first card
-        data = sock.recv(1024)
-        round_result, rank, suit = decode_server_payload(data)
-        dealer_sum += get_card_value(rank)
-        UI.add_dealer_card(Card(rank, suit), dealer_sum, player_sum)
+        data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
+        round_result, rank, suit_idx = decode_server_payload(data)
+        UI.add_dealer_card(Card(rank, suit_idx), round_num)
 
         # play the game
         while True:
             decision = None
             try:
-                while decision not in ("Hittt", "Stand"):
-                    decision = input("Please type Hittt or Stand: ").strip()
+                while decision not in ("HITTT", "STAND", "HITT", "HIT"):
+                    decision = input("Please type Hittt or Stand: ").strip().upper()
             except (EOFError, KeyboardInterrupt):
                 print("\nInterrupted during game. Closing connection...")
                 raise  # Re-raise to be caught by outer handler
 
-            if decision == "Hittt":
-                sock.sendall(encode_request("Hittt"))
-                data = sock.recv(1024)
-                round_result, rank, suit = decode_server_payload(data)
-                player_sum += get_card_value(rank)
-                UI.add_player_card(Card(rank, suit), player_sum, dealer_sum)
+            if decision in ("HITTT", "HITT", "HIT"):
+                sock.sendall(encode_client_payload("Hittt"))
+                data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
+                round_result, rank, suit_idx = decode_server_payload(data)
+                UI.add_player_card(Card(rank, suit_idx), round_num)
 
                 # Check if the player has bust
                 if round_result == RESULT_LOSS:
-                    UI.print_result(round_result, player_sum, dealer_sum, round_num)
-                    continue
+                    UI.print_result(round_result, round_num)
+                    break
             
-            elif decision == "Stand":
+            elif decision == "STAND":
+                sock.sendall(encode_client_payload("Stand"))
                 while True:
-                    data = sock.recv(1024)
-                    round_result, rank, suit = decode_server_payload(data)
-                    dealer_sum += get_card_value(rank)
-                    UI.add_dealer_card(Card(rank, suit), dealer_sum, player_sum)
+                    data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
+                    round_result, rank, suit_idx = decode_server_payload(data)
+                    UI.add_dealer_card(Card(rank, suit_idx), round_num)
 
                     if round_result != RESULT_NOT_OVER:
                         break
                 
-                UI.print_result(round_result, player_sum, dealer_sum, round_num)
-                continue # Dealer plays, decide winner of round
-
-def get_card_value(rank: int) -> int:
-    if rank == 1:
-        return 11
-    elif 2 <= rank <= 10:
-        return rank
-    else:
-        return 10
-
+                UI.print_result(round_result, round_num)
+                break # Dealer plays, decide winner of round
 
 if __name__ == "__main__":
     main()

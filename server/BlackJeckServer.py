@@ -8,9 +8,20 @@ import os
 # Add parent directory to path to allow imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from BlackJeckLogic import BlackjackGame
+from BlackJeckLogic import BlackjackGame, SUITS
 from UDPBroadcast import broadcast_offers
 from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload, REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
+
+
+def recv_exact(conn: socket.socket, size: int) -> bytes: # TODO: לבדוק מה זה עושה
+    """Receive exactly 'size' bytes from the connection."""
+    data = b''
+    while len(data) < size:
+        chunk = conn.recv(size - len(data))
+        if not chunk:
+            raise ConnectionError("Connection closed unexpectedly")
+        data += chunk
+    return data
 
 # Constants
 SERVER_NAME = "Team_LOVE"
@@ -67,7 +78,7 @@ def main():
             print(f"New client connected from {addr}")
 
             try:
-                rounds, name = decode_request(conn.recv(1024))
+                rounds, name = decode_request(recv_exact(conn, REQUEST_SIZE))
                 if rounds < 1:
                     print("Invalid number of rounds")
                     conn.close()
@@ -106,7 +117,7 @@ def play_game(conn: socket.socket, rounds: int, name: str):
 
         # Player turn
         while True:
-            decision = decode_client_payload(conn.recv(1024))
+            decision = decode_client_payload(recv_exact(conn, CLIENT_PAYLOAD_SIZE))
 
             if decision == "HITTT":
                 card = game.player_hit()
