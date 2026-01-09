@@ -11,17 +11,22 @@ UDP for server discovery and TCP for gameplay.
 ## ▶️ How to Run
 
 ### Server
-1. Run the server application.
-2. The server starts broadcasting offer messages via UDP once every second.
-3. The server waits for incoming TCP connections from clients.
+1. Navigate to the server directory: `cd server`
+2. Run the server: `python server_main.py`
+3. The server will print its IP address and start broadcasting offer messages via UDP once every second.
+4. The server waits for incoming TCP connections from clients.
+5. Press Ctrl+C to stop the server.
 
 ### Client
-1. Run the client application.
-2. The client listens for server offer messages on UDP port **13122**.
-3. Upon receiving an offer, the client connects to the server via TCP.
-4. The client is prompted to enter the number of rounds to play.
+1. Navigate to the client directory: `cd client`
+2. Run the client: `python client_main.py`
+3. The client listens for server offer messages on UDP port **13122**.
+4. When an offer is received, you'll be prompted to enter the number of rounds to play (1-255).
+5. Play the game by choosing 'h' for Hit or 's' for Stand.
+6. After all rounds, the client will display statistics and return to listening for new offers.
+7. Press Ctrl+C to stop the client.
 
-Both client and server are expected to run continuously until terminated manually.
+**Note:** Both client and server are expected to run continuously until terminated manually. You can run multiple clients on the same machine - they will all listen on the same UDP port thanks to SO_REUSEPORT.
 
 ---
 
