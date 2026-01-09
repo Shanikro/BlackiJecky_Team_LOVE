@@ -20,7 +20,7 @@ RANK_NAMES = {
 
 class Card:
     
-    def __init__(self, rank: int, suit: int):
+    def __init__(self, rank: int, suit: str):
         self.rank = rank
         self.suit = suit
     
@@ -32,38 +32,6 @@ class Card:
         else:  # Face cards (Jack, Queen, King)
             return 10
     
-    def to_string(self) -> str:
-    # Convert rank to display value
-       rank = RANK_NAMES[self.rank]
-       suit = SUIT_SYMBOLS[self.suit]
-       return f"┌─────────┐\n│ {rank:<7} │\n│         │\n│    {suit}    │\n│         │\n│ {rank:>7} │\n└─────────┘"
-
-    
-    # def encode(self) -> bytes:
-    #     """
-    #     Encode card for network transmission.
-        
-    #     Returns:
-    #         3 bytes: rank (2 bytes, 01-13) + suit (1 byte, 0-3)
-    #     """
-    #     # Rank encoded as 2 bytes (01-13), suit as 1 byte (0-3)
-    #     return bytes([0, self.rank, self.suit])
-    
-    # @staticmethod
-    # def decode(data: bytes) -> 'Card':
-    #     """
-    #     Decode card from network transmission.
-        
-    #     Args:
-    #         data: 3 bytes containing rank and suit
-            
-    #     Returns:
-    #         Card object
-    #     """
-    #     rank = data[1]  # Second byte is rank
-    #     suit = data[2]  # Third byte is suit
-    #     return Card(rank, suit)
-
 class Deck:
     def __init__(self):
         self.cards: List[Card] = [] # list of cards
@@ -103,36 +71,32 @@ class Hand:
     def to_string(self) -> str:
         return "\n".join([card.to_string() for card in self.cards]) # return the string representation of the hand
     
-class BlackjackRound:
+class BlackjackGame:
     # Round Result
-    ROUND_RESULT = IntEnum('ROUND_RESULT', ['NOT_OVER', 'PLAYER_WINS', 'DEALER_WINS', 'TIE'])
+    ROUND_RESULT = IntEnum('ROUND_RESULT', ['NOT_OVER', 'TIE', 'DEALER_WINS', 'PLAYER_WINS'])
 
     def __init__(self):
         self.deck = Deck()
         self.player_hand = Hand()
         self.dealer_hand = Hand()
-        self.round_over = False # flag to check if the round is over
         self.result = self.ROUND_RESULT.NOT_OVER # result of the round
-    
-    def initial_deal(self):
-        # Deal 2 cards to player
-        for _ in range(2):
-            card = self.deck.deal_card()
-            self.player_hand.add_card(card)
-        
-        # Deal 2 cards to dealer
-        for _ in range(2):
-            card = self.deck.deal_card()
-            self.dealer_hand.add_card(card)
-        
-        # Check if player busted immediately
-        if self.player_hand.is_bust():
-            self.round_over = True
-            self.result = self.ROUND_RESULT.DEALER_WINS
     
     def player_hit(self) -> Optional[Card]:
         card = self.deck.deal_card()
         self.player_hand.add_card(card)
+
+        if self.player_hand.is_bust():
+            self.result = self.ROUND_RESULT.DEALER_WINS
+
+        return card
+
+    def dealer_hit(self) -> Optional[Card]:
+        card = self.deck.deal_card()
+        self.dealer_hand.add_card(card)
+        
+        if self.dealer_hand.is_bust():
+            self.result = self.ROUND_RESULT.PLAYER_WINS
+
         return card
     
     def dealer_play(self) -> List[Card]:
