@@ -144,6 +144,7 @@ def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds:
                 sock.sendall(encode_client_payload("Hittt"))
                 data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
                 round_result, rank, suit_idx = decode_server_payload(data)
+                #debug print
                 UI.add_player_card(Card(rank, suit_idx), round_num)
 
                 # Check if the player has bust

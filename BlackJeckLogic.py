@@ -92,7 +92,11 @@ class BlackjackGame:
 
     def dealer_hit(self) -> Optional[Card]:
         card = self.deck.deal_card()
+        #degud print
+        print("add card to dealer:", card.rank)
         self.dealer_hand.add_card(card)
+        #degud print
+        print("dealer hand value:", self.dealer_hand.total_value)
         
         if self.dealer_hand.is_bust():
             self.result = self.ROUND_RESULT.PLAYER_WINS

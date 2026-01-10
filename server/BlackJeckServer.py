@@ -135,8 +135,15 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
 
                 while game.dealer_hand.total_value < 17:
                     card = game.dealer_hit()
+                    #degud print
+                    print("Dealer hits, new card:", card.rank)
+                    print("Dealer hand value now:", game.dealer_hand.total_value)
                     conn.sendall(encode_server_payload(game.result, card.rank, card.suit))
-                
+
+                #debug print
+                print("Final dealer hand value:", game.dealer_hand.total_value)
+                game.decide_winner()
+                conn.sendall(encode_server_payload(game.result, 0, 0)) # send final result with dummy card
                 decide_winner(game.result, player_name)
 
                 break # Dealer plays, decide winner
