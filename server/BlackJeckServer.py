@@ -9,7 +9,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from BlackJeckLogic import BlackjackGame, SUITS
-from UDPBroadcast import broadcast_offers
+from UDPBroadcastOffer import broadcast_offers
 from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload, REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
 
 

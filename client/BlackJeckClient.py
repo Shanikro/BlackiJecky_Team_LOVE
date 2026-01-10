@@ -5,7 +5,7 @@ import os
 # Add parent directory to path to allow imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from UDPBroadcast import listen_for_offer
+from UDPBroadcastOffer import listen_for_offer
 from BlackJeckPacketProtocol import decode_server_payload, encode_request, encode_client_payload, SERVER_PAYLOAD_SIZE
 from BlackJeckLogic import BlackjackGame, Card, SUITS
 from GameUI import GameUI

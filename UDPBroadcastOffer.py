@@ -32,20 +32,13 @@ def get_broadcast_address() -> str:
 
 
 def broadcast_offers(server_tcp_port: int, server_name: str, stop_event: threading.Event = None) -> None:
-    """
-    Broadcast UDP offers. Can be stopped by setting stop_event.
-    
-    Args:
-        server_tcp_port: TCP port to advertise
-        server_name: Name of the server
-        stop_event: Optional threading.Event to signal stop
-    """
+    # Create a socket and set the broadcast option
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     # OS chooses the interface
     sock.bind(('', 0))
 
-    offer_bytes = encode_offer(server_tcp_port, server_name)
+    offer_bytes = encode_offer(server_tcp_port, server_name) # encode the offer
 
     try:
         while True:
@@ -70,7 +63,7 @@ def broadcast_offers(server_tcp_port: int, server_name: str, stop_event: threadi
                 
             time.sleep(OFFER_INTERVAL_SEC)
     except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully
+        # Ctrl+C -> stop the broadcast
         pass
     finally:
         sock.close()
