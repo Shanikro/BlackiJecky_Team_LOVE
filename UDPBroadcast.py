@@ -42,7 +42,7 @@ def broadcast_offers(server_tcp_port: int, server_name: str, stop_event: threadi
     """
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    # Bind to allow broadcasts on macOS
+    # OS chooses the interface
     sock.bind(('', 0))
 
     offer_bytes = encode_offer(server_tcp_port, server_name)
