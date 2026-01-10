@@ -76,10 +76,12 @@ def main():
                 sock.connect((server_ip, server_tcp_port))
                 sock.sendall(encode_request(num_rounds, team_name)) # send the request to the server
 
-                play_game(sock, server_name, team_name, num_rounds)
-
-                #TODO: להוסיף את שלב 10 מהעבודה
+                wins = play_game(sock, server_name, team_name, num_rounds)
                 
+                # Print game statistics
+                GameUI.print_statistics(team_name, wins, num_rounds)
+
+
             except KeyboardInterrupt:
                 print("\nInterrupted. Returning to listen for offers...")
             except Exception as e:
@@ -109,6 +111,8 @@ def recv_exact(sock: socket.socket, size: int) -> bytes: # TODO: לבדוק מה
 
 
 def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds: int):
+
+    wins = 0
 
     for round_num in range(1, num_rounds + 1):
         # initialize the UI (init also the player and dealer sums)
@@ -144,7 +148,6 @@ def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds:
                 sock.sendall(encode_client_payload("Hittt"))
                 data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
                 round_result, rank, suit_idx = decode_server_payload(data)
-                #debug print
                 UI.add_player_card(Card(rank, suit_idx), round_num)
 
                 # Check if the player has bust
@@ -157,13 +160,20 @@ def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds:
                 while True:
                     data = recv_exact(sock, SERVER_PAYLOAD_SIZE)
                     round_result, rank, suit_idx = decode_server_payload(data)
-                    UI.add_dealer_card(Card(rank, suit_idx), round_num)
-
-                    if round_result != RESULT_NOT_OVER:
+                    
+                    # Only add card if round is still ongoing
+                    if round_result == RESULT_NOT_OVER:
+                        UI.add_dealer_card(Card(rank, suit_idx), round_num)
+                    else:
+                        # Final result received, don't add card (already added)
+                        if round_result == RESULT_WIN:
+                            wins += 1
                         break
                 
                 UI.print_result(round_result, round_num)
-                break # Dealer plays, decide winner of round
+                break # Dealer played, decide winner of round
+
+    return wins
 
 if __name__ == "__main__":
     main()

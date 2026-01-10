@@ -1,8 +1,3 @@
-"""
-Game Logic Module
-Handles deck management, card dealing, and game rules for Blackjack.
-"""
-
 from enum import IntEnum
 import random
 from typing import List, Tuple, Optional
@@ -16,7 +11,6 @@ RANK_NAMES = {
     1: 'A', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7',
     8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K'
 }
-
 
 class Card:
     
@@ -92,11 +86,7 @@ class BlackjackGame:
 
     def dealer_hit(self) -> Optional[Card]:
         card = self.deck.deal_card()
-        #degud print
-        print("add card to dealer:", card.rank)
         self.dealer_hand.add_card(card)
-        #degud print
-        print("dealer hand value:", self.dealer_hand.total_value)
         
         if self.dealer_hand.is_bust():
             self.result = self.ROUND_RESULT.PLAYER_WINS
@@ -115,6 +105,11 @@ class BlackjackGame:
         
 
     def decide_winner(self):
+
+        if self.dealer_hand.total_value < 17:
+            self.result = self.ROUND_RESULT.NOT_OVER
+            return
+        
         player_bust = self.player_hand.is_bust()
         dealer_bust = self.dealer_hand.is_bust()
         

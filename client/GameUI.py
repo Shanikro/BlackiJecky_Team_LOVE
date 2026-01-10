@@ -96,28 +96,35 @@ class GameUI:
             result_msg = "❓ Unknown Result ❓"
             result_emoji = "❓"
         
-        # Print beautiful result display
-        print("\n" + "="*60)
-        print(f"  {'ROUND ' + str(round_num) + ' RESULT':^54}")
-        print("="*60)
-        print()
+        # Print result display (sums and winner only)
+        print("\n" + "="*50)
+        print(f"  {'ROUND ' + str(round_num) + ' RESULT':^44}")
+        print("="*50)
+        print(f"  👤 Your sum: {self.player_sum}  |  🎰 Dealer sum: {self.dealer_sum}")
+        print("─"*50)
+        print(f"  {result_msg:^44}")
+        print(f"  {result_emoji:^44}")
+        print("="*50 + "\n")
+    
+    @staticmethod
+    def print_statistics(player_name: str, wins: int, num_rounds: int):
+        losses = num_rounds - wins
+        win_rate = (wins / num_rounds * 100) if num_rounds > 0 else 0
         
-        # Print player cards and sum
-        print("  👤 YOUR HAND:")
-        self.print_cards_side_by_side(self.player_cards)
-        print(f"  📊 Your sum: {self.player_sum}")
-        print()
-        
-        # Print dealer cards and sum
-        print("  🎰 DEALER'S HAND:")
-        self.print_cards_side_by_side(self.dealer_cards)
-        print(f"  📊 Dealer sum: {self.dealer_sum}")
-        print()
-        
-        # Print final result with style
-        print("  " + "─"*56)
-        print(f"  {result_msg:^54}")
-        print(f"  {result_emoji:^54}")
-        print("  " + "─"*56)
-        print("="*60)
-        print()
+        print("\n" + "🎰" + "═"*56 + "🎰")
+        print("           📊 GAME STATISTICS 📊")
+        print("═"*60)
+        print(f"  👤 Player: {player_name}")
+        print(f"  🎮 Total Rounds: {num_rounds}")
+        print("─"*60)
+        print(f"  🏆 Wins:   {wins}")
+        print(f"  💔 Losses: {losses}")
+        print(f"  📈 Win Rate: {win_rate:.1f}%")
+        print("─"*60)
+        if win_rate >= 50:
+            print("  🎉 Great job! You beat the house! 🎉")
+        elif win_rate > 0:
+            print("  💪 Better luck next time! 💪")
+        else:
+            print("  😢 The house always wins... 😢")
+        print("🎰" + "═"*56 + "🎰\n")

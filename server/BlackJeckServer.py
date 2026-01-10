@@ -109,7 +109,7 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
         conn.sendall(encode_server_payload(game.result, second_card_player.rank, second_card_player.suit))
 
         if game.result == game.ROUND_RESULT.DEALER_WINS:
-            decide_winner(game.result, player_name)
+            server_print_winner(game.result, player_name)
             continue # Dealer wins, no need to continue the round
 
         first_card_dealer = game.dealer_hit()
@@ -125,30 +125,31 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
                 card = game.player_hit()
                 conn.sendall(encode_server_payload(game.result, card.rank, card.suit))
 
-                if game.player_hand.is_bust():
-                    decide_winner(game.result, player_name)
-                    break 
+                if game.result == game.ROUND_RESULT.DEALER_WINS:
+                    server_print_winner(game.result, player_name)
+                    break
 
             elif decision == "STAND":
-                # expose the second card of the dealer
+                # expose the second card of the dealer (still NOT_OVER)
                 conn.sendall(encode_server_payload(game.result, second_card_dealer.rank, second_card_dealer.suit))
 
+                # Dealer draws until reaching 17+
                 while game.dealer_hand.total_value < 17:
                     card = game.dealer_hit()
-                    #degud print
-                    print("Dealer hits, new card:", card.rank)
-                    print("Dealer hand value now:", game.dealer_hand.total_value)
+                    # Send each new card (still NOT_OVER)
                     conn.sendall(encode_server_payload(game.result, card.rank, card.suit))
-
-                #debug print
-                print("Final dealer hand value:", game.dealer_hand.total_value)
+                
+                # After loop: dealer has 17+ or busted, decide winner
                 game.decide_winner()
-                conn.sendall(encode_server_payload(game.result, 0, 0)) # send final result with dummy card
-                decide_winner(game.result, player_name)
+                # Send final result packet (use last card in hand)
+                last_card = game.dealer_hand.cards[-1]
+                conn.sendall(encode_server_payload(game.result, last_card.rank, last_card.suit))
 
-                break # Dealer plays, decide winner
+                server_print_winner(game.result, player_name)
 
-def decide_winner(result: int, player_name: str):
+                break # Dealer played, decide winner of round
+
+def server_print_winner(result: int, player_name: str):
     if result == BlackjackGame.ROUND_RESULT.DEALER_WINS:
         print("Dealer wins round")
     elif result == BlackjackGame.ROUND_RESULT.PLAYER_WINS:
