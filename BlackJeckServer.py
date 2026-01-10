@@ -1,33 +1,33 @@
-
 import socket
 import signal
 import sys
 import threading
-import os
 
-# Add parent directory to path to allow imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from BlackJeckLogic import BlackjackGame, SUITS
+from BlackJeckLogic import BlackjackGame
 from UDPBroadcastOffer import broadcast_offers
-from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload, REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
+from TCPConnection import recv_exact
+from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload,\
+     REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
 
-
-def recv_exact(conn: socket.socket, size: int) -> bytes:
-    data = b'' # empty byte string
-    while len(data) < size:
-        chunk = conn.recv(size - len(data)) # receive data from the socket
-        if not chunk:
-            raise ConnectionError("Connection closed unexpectedly")
-        data += chunk
-    return data
-
-# Constants
 SERVER_NAME = "Team_LOVE"
 DEFAULT_IP = "127.0.0.1"
 
+# global variables for graceful shutdown
+tcp_sock = None
+stop_event = None
+
+
+def signal_handler(sig, frame):
+    """Handle graceful shutdown on Ctrl+C or kill command."""
+    print("\nShutting down server...")
+    if stop_event:
+        stop_event.set()
+    if tcp_sock:
+        tcp_sock.close()
+    sys.exit(0)
+
+
 def get_local_ip() -> str:
-    """Get the local IP address of this machine."""
     try:
         # Connect to a remote address to determine local IP
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -39,57 +39,51 @@ def get_local_ip() -> str:
         return DEFAULT_IP
 
 def main():
+    global tcp_sock, stop_event
+    
     server_ip = get_local_ip()
-    print(f"Server started, listening on IP address {server_ip}")
+    print(f"Server started, listening on IP address {server_ip}") # print server IP
 
     # Create TCP socket and bind to any available port
-    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    tcp_sock.bind(("", 0))          # 0 = OS chooses port
-    tcp_sock.listen(5) # listen for up to 5 connections in the queue
-    tcp_port = tcp_sock.getsockname()[1] # get the tcp port
+    tcp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # create TCP socket
+    tcp_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # allow reuse of address
+    tcp_sock.bind(("", 0)) # bind to any available port
+    tcp_sock.listen(5) # listen for connections (5 connections at a time)
+    tcp_port = tcp_sock.getsockname()[1] # get the port number
     
-    # Create stop event for graceful shutdown
-    stop_event = threading.Event()
-    
-    # Start broadcasting the offer in a separate thread
-    broadcast_thread = threading.Thread(
+    # Create stop event and start broadcast thread
+    stop_event = threading.Event() # create stop event
+    broadcast_thread = threading.Thread( # create broadcast thread
         target=broadcast_offers,
         args=(tcp_port, SERVER_NAME, stop_event),
-        daemon=True
+        daemon=True # daemon thread (dies when main thread dies)
     )
-    broadcast_thread.start()
+    broadcast_thread.start() # start broadcast thread
     
-    # Handle graceful shutdown on Ctrl+C
-    def signal_handler(sig, frame):
-        print("\nShutting down server...")
-        stop_event.set()  # Stop broadcasting
-        tcp_sock.close()   # Close TCP socket
-        sys.exit(0)
-    
-    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # kill command
+    signal.signal(signal.SIGINT, signal_handler) # register signal handler for graceful shutdown
 
-    # Wait for connections
+    # wait for connections
     try:
         while True:
-            conn, addr = tcp_sock.accept()
-            print(f"New client connected from {addr}")
+            conn, addr = tcp_sock.accept() # accept connection from client
+            print(f"New client connected from {addr}") # print client address (IP and port)
 
             try:
-                rounds, name = decode_request(recv_exact(conn, REQUEST_SIZE))
+                rounds, name = decode_request(recv_exact(conn, REQUEST_SIZE)) # decode request from client
                 if rounds < 1:
                     print("Invalid number of rounds")
                     conn.close()
                     continue
-                play_game(conn, rounds, name)
-            except Exception as e:
+
+                play_game(conn, rounds, name) # play game with client
+
+            except Exception as e: # handle exception
                 print(f"Error handling client {addr}: {e}")
-            finally:
+            finally: # close connection
                 conn.close()
     except KeyboardInterrupt: # Ctrl+C or kill command
         print("\nShutting down server...")
-        signal_handler(None, None)
+        signal_handler(None, None) # call signal handler
 
 def play_game(conn: socket.socket, rounds: int, player_name: str):
 
@@ -99,7 +93,7 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
         print(f"{'='*50}")
         print(f"Round {round_num}/{rounds} - {player_name}")
         
-        game = BlackjackGame()
+        game = BlackjackGame() # create new round game
 
         first_card_player = game.player_hit()
         conn.sendall(encode_server_payload(game.result, first_card_player.rank, first_card_player.suit))
@@ -107,24 +101,24 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
         second_card_player = game.player_hit()
         conn.sendall(encode_server_payload(game.result, second_card_player.rank, second_card_player.suit))
 
-        if game.result == game.ROUND_RESULT.DEALER_WINS:
+        if game.result == game.ROUND_RESULT.DEALER_WINS: # player busts
             server_print_winner(game.result, player_name)
             continue # Dealer wins, no need to continue the round
 
         first_card_dealer = game.dealer_hit()
         conn.sendall(encode_server_payload(game.result, first_card_dealer.rank, first_card_dealer.suit))
 
-        second_card_dealer = game.dealer_hit()
+        second_card_dealer = game.dealer_hit() # second card of dealer hidden
 
         # Player turn
         while True:
-            decision = decode_client_payload(recv_exact(conn, CLIENT_PAYLOAD_SIZE))
+            decision = decode_client_payload(recv_exact(conn, CLIENT_PAYLOAD_SIZE)) # decode decision from client
 
             if decision == "HITTT":
                 card = game.player_hit()
-                conn.sendall(encode_server_payload(game.result, card.rank, card.suit))
+                conn.sendall(encode_server_payload(game.result, card.rank, card.suit)) # send card to client
 
-                if game.result == game.ROUND_RESULT.DEALER_WINS:
+                if game.result == game.ROUND_RESULT.DEALER_WINS: # player busts
                     server_print_winner(game.result, player_name)
                     break
 

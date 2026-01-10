@@ -1,7 +1,7 @@
 # udp_broadcast.py
 import socket
 import time
-from typing import Optional, Tuple
+from typing import Tuple
 import threading
 
 from BlackJeckPacketProtocol import decode_offer, encode_offer
@@ -31,6 +31,7 @@ def get_broadcast_address() -> str:
         return '<broadcast>'
 
 
+# Broadcast the offers (Server side)
 def broadcast_offers(server_tcp_port: int, server_name: str, stop_event: threading.Event = None) -> None:
     # Create a socket and set the broadcast option
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -69,42 +70,21 @@ def broadcast_offers(server_tcp_port: int, server_name: str, stop_event: threadi
         sock.close()
 
 
-def listen_for_offer(timeout_sec: float = 0.0) -> Optional[Tuple[str, int, str]]:
-    """
-    Client side:
-    Listens on UDP_PORT for OFFER.
-    Returns (server_ip, server_tcp_port, server_name) on success.
-    If timeout_sec > 0, returns None on timeout.
-    """
+# Listen for offers (Client side)
+def listen_for_offer() -> Tuple[str, int, str]:
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-
-    # Allow multiple clients on the same machine (as per instructions)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    # Enable broadcast reception
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    try:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    except (AttributeError, OSError):
-        pass
-
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # allow multiple clients on the same machine
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # enable broadcast reception
     sock.bind(("", UDP_PORT))
-
-    if timeout_sec and timeout_sec > 0:
-        sock.settimeout(timeout_sec)
 
     try:
         while True:
             data, addr = sock.recvfrom(1024)
-            server_ip = addr[0]
-
             try:
                 tcp_port, server_name = decode_offer(data)
-                return server_ip, tcp_port, server_name
+                return addr[0], tcp_port, server_name
             except Exception:
-                # packet is not valid (cookie/type/length) -> ignore
-                continue
-
-    except socket.timeout:
-        return None
+                continue  # Invalid packet, keep waiting
     finally:
         sock.close()

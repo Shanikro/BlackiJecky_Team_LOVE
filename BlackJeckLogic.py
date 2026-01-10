@@ -1,10 +1,9 @@
 from enum import IntEnum
 import random
-from typing import List, Tuple, Optional
+from typing import List, Optional
 
-# Card suits and symbols
+# Card suits #
 SUITS = ['H', 'D', 'C', 'S']
-SUIT_SYMBOLS = {'H': '♥', 'D': '♦', 'C': '♣', 'S': '♠'}
 
 # Card ranks: 1=Ace, 2-10, 11=Jack, 12=Queen, 13=King
 RANK_NAMES = {
@@ -49,7 +48,6 @@ class Deck:
             self.reset()
         return self.cards.pop() # return the top card
 
-
 class Hand:
     def __init__(self):
         self.cards = [] # list of cards in the hand
@@ -61,10 +59,7 @@ class Hand:
 
     def is_bust(self):
         return self.total_value > 21 # return True if the hand is bust
-    
-    def to_string(self) -> str:
-        return "\n".join([card.to_string() for card in self.cards]) # return the string representation of the hand
-    
+
 class BlackjackGame:
     # Round Result
     ROUND_RESULT = IntEnum('ROUND_RESULT', ['NOT_OVER', 'TIE', 'DEALER_WINS', 'PLAYER_WINS'])
