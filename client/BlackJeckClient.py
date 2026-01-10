@@ -40,8 +40,8 @@ def main():
             sock.connect((server_ip, server_tcp_port))
             sock.sendall(encode_request(num_rounds, team_name))
 
-            wins = play_game(sock, server_name, team_name, num_rounds)
-            GameUI.print_statistics(team_name, wins, num_rounds)
+            wins, ties = play_game(sock, server_name, team_name, num_rounds)
+            GameUI.print_statistics(team_name, wins, ties, num_rounds)
 
         except KeyboardInterrupt:
             print("\nShutting down client...")
@@ -67,6 +67,7 @@ def recv_exact(sock: socket.socket, size: int) -> bytes:
 def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds: int):
 
     wins = 0
+    ties = 0
 
     for round_num in range(1, num_rounds + 1):
         # initialize the UI (init also the player and dealer sums)
@@ -118,12 +119,14 @@ def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds:
                         # Final result received, don't add card (already added)
                         if round_result == RESULT_WIN:
                             wins += 1
+                        elif round_result == RESULT_TIE:
+                            ties += 1
                         break
                 
                 UI.print_result(round_result, round_num)
                 break # Dealer played, decide winner of round
 
-    return wins
+    return wins, ties
 
 if __name__ == "__main__":
     main()

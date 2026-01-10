@@ -107,8 +107,8 @@ class GameUI:
         print("="*50 + "\n")
     
     @staticmethod
-    def print_statistics(player_name: str, wins: int, num_rounds: int):
-        losses = num_rounds - wins
+    def print_statistics(player_name: str, wins: int, ties: int, num_rounds: int):
+        losses = num_rounds - wins - ties
         win_rate = (wins / num_rounds * 100) if num_rounds > 0 else 0
         
         print("\n" + "🎰" + "═"*56 + "🎰")
@@ -118,12 +118,13 @@ class GameUI:
         print(f"  🎮 Total Rounds: {num_rounds}")
         print("─"*60)
         print(f"  🏆 Wins:   {wins}")
+        print(f"  🤝 Ties:   {ties}")
         print(f"  💔 Losses: {losses}")
         print(f"  📈 Win Rate: {win_rate:.1f}%")
         print("─"*60)
         if win_rate >= 50:
             print("  🎉 Great job! You beat the house! 🎉")
-        elif win_rate > 0:
+        elif win_rate > 0 or ties > 0:
             print("  💪 Better luck next time! 💪")
         else:
             print("  😢 The house always wins... 😢")
