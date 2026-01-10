@@ -13,11 +13,10 @@ from UDPBroadcast import broadcast_offers
 from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload, REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
 
 
-def recv_exact(conn: socket.socket, size: int) -> bytes: # TODO: לבדוק מה זה עושה
-    """Receive exactly 'size' bytes from the connection."""
-    data = b''
+def recv_exact(conn: socket.socket, size: int) -> bytes:
+    data = b'' # empty byte string
     while len(data) < size:
-        chunk = conn.recv(size - len(data))
+        chunk = conn.recv(size - len(data)) # receive data from the socket
         if not chunk:
             raise ConnectionError("Connection closed unexpectedly")
         data += chunk

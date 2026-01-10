@@ -1,6 +1,4 @@
-
 import socket
-import signal
 import sys
 import os
 
@@ -17,93 +15,49 @@ RESULT_WIN = BlackjackGame.ROUND_RESULT.PLAYER_WINS
 RESULT_LOSS = BlackjackGame.ROUND_RESULT.DEALER_WINS
 RESULT_TIE = BlackjackGame.ROUND_RESULT.TIE
 
-# Global variable to track current socket for graceful shutdown
-current_sock = None
-
-
-def signal_handler(sig, frame):
-    """Handle Ctrl+C gracefully."""
-    print("\nShutting down client...")
-    if current_sock:
-        try:
-            current_sock.close()
-        except:
-            pass
-    sys.exit(0)
-
-
 def main():
-    global current_sock
-    
-    # Set up signal handlers for graceful shutdown
-    signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
-    signal.signal(signal.SIGTERM, signal_handler)  # kill command
-    
     print("BlackJeckClient started")
     
-    try: # TODO:לחזור על הפונקציה ולראות שלא סתם עושה מלא דברים 
-        while True:
-            sock = None
-            try:
-                print("Client started, listening for offer requests...")
-                server_ip, server_tcp_port, server_name = listen_for_offer()
-                if server_ip is None:
-                    print("No server offer received")
-                    continue
-                print(f"Server offer received from {server_ip}:{server_tcp_port} - {server_name}")
+    while True:
+        sock = None
+        try:
+            print("Client started, listening for offer requests...")
+            server_ip, server_tcp_port, server_name = listen_for_offer()
+            if server_ip is None:
+                print("No server offer received")
+                continue
+            print(f"Server offer received from {server_ip}:{server_tcp_port} - {server_name}")
 
-                #get team name from user
-                try:
-                    team_name = input("Enter your name: ")
-                except (EOFError, KeyboardInterrupt):
-                    print("\nExiting...")
-                    break
-
-                try:
-                    num_rounds = int(input("How many rounds would you like to play?  "))
-                except (EOFError, KeyboardInterrupt, ValueError):
-                    print("\nInvalid input or interrupted. Returning to listen for offers...")
-                    continue
-                    
-                if num_rounds < 1:
-                    print("Number of rounds must be at least 1")
-                    continue
+            team_name = input("Enter your name: ")
+            num_rounds = int(input("How many rounds would you like to play? "))
                 
-                # Create new socket for each game session
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                current_sock = sock  # Track for signal handler
-                
-                sock.connect((server_ip, server_tcp_port))
-                sock.sendall(encode_request(num_rounds, team_name)) # send the request to the server
+            if num_rounds < 1:
+                print("Number of rounds must be at least 1")
+                continue
+            
+            # Create new socket and connect
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((server_ip, server_tcp_port))
+            sock.sendall(encode_request(num_rounds, team_name))
 
-                wins = play_game(sock, server_name, team_name, num_rounds)
-                
-                # Print game statistics
-                GameUI.print_statistics(team_name, wins, num_rounds)
+            wins = play_game(sock, server_name, team_name, num_rounds)
+            GameUI.print_statistics(team_name, wins, num_rounds)
 
-
-            except KeyboardInterrupt:
-                print("\nInterrupted. Returning to listen for offers...")
-            except Exception as e:
-                print(f"Error: {e}. Returning to listen for offers...")
-            finally:
-                # Close socket after each game session
-                if sock:
-                    try:
-                        sock.close()
-                    except:
-                        pass
-                current_sock = None
-                
-    except KeyboardInterrupt:
-        signal_handler(None, None)
+        except KeyboardInterrupt:
+            print("\nShutting down client...")
+            break
+        finally:
+            if sock:
+                sock.close()
 
 
-def recv_exact(sock: socket.socket, size: int) -> bytes: # TODO: לבדוק מה זה עושה
-    """Receive exactly 'size' bytes from the socket."""
-    data = b''
+"""
+Receive exactly 'size' bytes from the socket.
+"""
+def recv_exact(sock: socket.socket, size: int) -> bytes:
+    data = b'' # empty byte string
     while len(data) < size:
-        chunk = sock.recv(size - len(data))
+        chunk = sock.recv(size - len(data)) # receive data from the socket
         if not chunk:
             raise ConnectionError("Connection closed unexpectedly")
         data += chunk
@@ -137,12 +91,8 @@ def play_game(sock: socket.socket, server_name: str, team_name: str, num_rounds:
         # play the game
         while True:
             decision = None
-            try:
-                while decision not in ("HITTT", "STAND", "HITT", "HIT"):
-                    decision = input("Please type Hittt or Stand: ").strip().upper()
-            except (EOFError, KeyboardInterrupt):
-                print("\nInterrupted during game. Closing connection...")
-                raise  # Re-raise to be caught by outer handler
+            while decision not in ("HITTT", "STAND", "HITT", "HIT"):
+                decision = input("Please type Hittt or Stand: ").strip().upper()
 
             if decision in ("HITTT", "HITT", "HIT"):
                 sock.sendall(encode_client_payload("Hittt"))
