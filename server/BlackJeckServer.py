@@ -135,8 +135,8 @@ def play_game(conn: socket.socket, rounds: int, player_name: str):
                 # Dealer draws until reaching 17+
                 while game.dealer_hand.total_value < 17:
                     card = game.dealer_hit()
-                    # Send each new card (still NOT_OVER)
-                    conn.sendall(encode_server_payload(game.result, card.rank, card.suit))
+                    # Always send NOT_OVER for cards (result will be sent after loop)
+                    conn.sendall(encode_server_payload(game.ROUND_RESULT.NOT_OVER, card.rank, card.suit))
                 
                 # After loop: dealer has 17+ or busted, decide winner
                 game.decide_winner()

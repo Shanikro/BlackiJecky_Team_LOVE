@@ -92,16 +92,6 @@ class BlackjackGame:
             self.result = self.ROUND_RESULT.PLAYER_WINS
 
         return card
-    
-    def dealer_play(self) -> List[Card]:
-        # Player choose 'Stand' -> Dealer plays until total_value >= 17 or busts
-
-        # Dealer hits until total_value >= 17
-        while self.dealer_hand.total_value < 17:
-            card = self.deck.deal_card()
-            self.dealer_hand.add_card(card)
-        
-        self.decide_winner()
         
 
     def decide_winner(self):
