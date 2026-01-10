@@ -1,12 +1,16 @@
 import socket
 import signal
 import sys
+import os
 import threading
 
-from BlackJeckLogic import BlackjackGame
-from UDPBroadcastOffer import broadcast_offers
-from TCPConnection import recv_exact
-from BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload,\
+# Add parent directory to path for package imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from black_jeck.BlackJeckLogic import BlackjackGame
+from black_jeck.UDPBroadcastOffer import UDPBroadcastOffer
+from network.TCPConnection import recv_exact
+from black_jeck.BlackJeckPacketProtocol import decode_request, encode_server_payload, decode_client_payload,\
      REQUEST_SIZE, CLIENT_PAYLOAD_SIZE
 
 SERVER_NAME = "Team_LOVE"
@@ -53,8 +57,9 @@ def main():
     
     # Create stop event and start broadcast thread
     stop_event = threading.Event() # create stop event
+    broadcaster = UDPBroadcastOffer()
     broadcast_thread = threading.Thread( # create broadcast thread
-        target=broadcast_offers,
+        target=broadcaster.broadcast,
         args=(tcp_port, SERVER_NAME, stop_event),
         daemon=True # daemon thread (dies when main thread dies)
     )

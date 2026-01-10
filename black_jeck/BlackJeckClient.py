@@ -1,11 +1,16 @@
 import socket
+import sys
+import os
 
-from UDPBroadcastOffer import listen_for_offer
-from TCPConnection import recv_exact
-from BlackJeckPacketProtocol import decode_server_payload, encode_request,\
+# Add parent directory to path for package imports
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from black_jeck.UDPBroadcastOffer import UDPBroadcastOffer
+from network.TCPConnection import recv_exact
+from black_jeck.BlackJeckPacketProtocol import decode_server_payload, encode_request,\
      encode_client_payload, SERVER_PAYLOAD_SIZE
-from BlackJeckLogic import BlackjackGame, Card
-from GameUI import GameUI
+from black_jeck.BlackJeckLogic import BlackjackGame, Card
+from black_jeck.GameUI import GameUI
 
 # Result codes #
 RESULT_NOT_OVER = BlackjackGame.ROUND_RESULT.NOT_OVER
@@ -22,7 +27,8 @@ def main():
         try:
             # Listen for server offers
             print("Listening for server offers...")
-            server_ip, server_tcp_port, server_name = listen_for_offer()
+            broadcaster = UDPBroadcastOffer()
+            server_ip, server_tcp_port, server_name = broadcaster.listen()
             print(f"Server offer received from {server_ip}:{server_tcp_port} - {server_name}")
 
             # Get player name and number of rounds

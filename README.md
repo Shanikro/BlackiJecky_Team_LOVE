@@ -8,16 +8,18 @@ UDP for server discovery and TCP for gameplay.
 
 ## ▶️ How to Run
 
+Run from the **project root folder** (BlackiJecky_Team_LOVE):
+
 ### Server
 ```bash
-python BlackJeckServer.py
+python3 black_jeck/BlackJeckServer.py
 ```
 - The server will print its IP address and start broadcasting offers via UDP.
 - Press `Ctrl+C` to stop the server.
 
 ### Client
 ```bash
-python BlackJeckClient.py
+python3 black_jeck/BlackJeckClient.py
 ```
 - The client listens for server offers on UDP port **13122**.
 - Enter your name and the number of rounds to play.
