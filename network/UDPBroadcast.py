@@ -1,15 +1,19 @@
+import ipaddress
 import socket
 import time
 from typing import Tuple
 import threading
 from abc import ABC, abstractmethod
 
+import psutil
+
+
 class UDPBroadcast(ABC): # abstract base class for UDP broadcast
 
     UDP_PORT = 13122
     OFFER_INTERVAL_SEC = 1.0
 
-    def get_broadcast_address():
+    def get_broadcast_address(self):
         try:
             # Get active IP
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
