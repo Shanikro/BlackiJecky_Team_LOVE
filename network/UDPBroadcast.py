@@ -14,23 +14,24 @@ class UDPBroadcast(ABC): # abstract base class for UDP broadcast
     OFFER_INTERVAL_SEC = 1.0
 
     def get_broadcast_address(self):
+        """Get the broadcast address for wifi or hotspot networks."""
         try:
-            # Get active IP
+            # Get IP address of the machine
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(('8.8.8.8', 1))
             local_ip = s.getsockname()[0]
             s.close()
 
-            # Find the matching interface and its netmask
+            # Find the interface with the IP address and calculate the broadcast address
             for interface, snics in psutil.net_if_addrs().items():
                 for snic in snics:
                     if snic.address == local_ip:
-                        # Dynamically calculate broadcast based on ACTUAL network mask
+                        # Calculate broadcast address based on actual network mask
                         net = ipaddress.IPv4Interface(f"{local_ip}/{snic.netmask}")
                         return str(net.network.broadcast_address)
         except Exception:
             pass
-        return "255.255.255.255"
+        return "255.255.255.255" # fallback to broadcast address for all networks
 
     # Broadcast the offers (Server side)
     def broadcast(self, server_tcp_port: int, server_name: str, stop_event: threading.Event = None) -> None:
