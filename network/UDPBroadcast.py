@@ -74,7 +74,13 @@ class UDPBroadcast(ABC): # abstract base class for UDP broadcast
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) # allow multiple clients on the same machine
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1) # allow port reuse for multiple servers on the same machine
+        # allow port reuse (exists on macOS/Linux; usually not on Windows)
+        if hasattr(socket, "SO_REUSEPORT"):
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+
+        # (optional but recommended) avoid "WSAECONNRESET" on Windows UDP receive
+        if hasattr(socket, "SIO_UDP_CONNRESET"):
+            sock.ioctl(socket.SIO_UDP_CONNRESET, False)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1) # enable broadcast reception
         sock.bind(("", self.UDP_PORT))
 
