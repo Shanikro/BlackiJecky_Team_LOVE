@@ -33,10 +33,21 @@ def main():
 
             # Get player name and number of rounds
             player_name = input("Enter your name: ")
-            num_rounds = int(input("How many rounds would you like to play? "))   
-            if num_rounds < 1:
-                print("Number of rounds must be at least 1")
-                continue
+            
+            # Ask for number of rounds until valid number is entered
+            while True:
+                rounds_input = input("How many rounds would you like to play? ").strip()
+                if not rounds_input:
+                    print("Please enter a number")
+                    continue
+                try:
+                    num_rounds = int(rounds_input)
+                    if num_rounds < 1:
+                        print("Number of rounds must be at least 1")
+                        continue
+                    break
+                except ValueError:
+                    print("Please enter a valid number")
             
             # Create TCP socket and connect to server
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
