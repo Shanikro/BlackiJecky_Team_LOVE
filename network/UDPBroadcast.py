@@ -8,26 +8,12 @@ class UDPBroadcast(ABC): # abstract base class for UDP broadcast
 
     UDP_PORT = 13122
     OFFER_INTERVAL_SEC = 1.0
+    BROADCAST_ADDRESS = '255.255.255.255'
 
 
     def get_broadcast_address(self) -> str:
-        """Get the broadcast address for the local network."""
-        try:
-            # Connect to a remote address to determine local IP
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            local_ip = s.getsockname()[0]
-            s.close()
-            
-            # Calculate broadcast address (assuming /24 subnet)
-            # For example, 10.125.203.87 -> 10.125.203.255
-            ip_parts = local_ip.split('.')
-            ip_parts[3] = '255'
-            broadcast_addr = '.'.join(ip_parts)
-            return broadcast_addr
-        except Exception:
-            # Fallback to generic broadcast
-            return '<broadcast>'
+        # Use limited broadcast address - works on any subnet including hotspots
+        return self.BROADCAST_ADDRESS
 
 
     # Broadcast the offers (Server side)
