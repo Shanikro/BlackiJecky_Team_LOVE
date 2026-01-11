@@ -8,13 +8,25 @@ class UDPBroadcast(ABC): # abstract base class for UDP broadcast
 
     UDP_PORT = 13122
     OFFER_INTERVAL_SEC = 1.0
-    BROADCAST_ADDRESS = '255.255.255.255'
 
+    def get_broadcast_address():
+        try:
+            # Get active IP
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 1))
+            local_ip = s.getsockname()[0]
+            s.close()
 
-    def get_broadcast_address(self) -> str:
-        # Use limited broadcast address - works on any subnet including hotspots
-        return self.BROADCAST_ADDRESS
-
+            # Find the matching interface and its netmask
+            for interface, snics in psutil.net_if_addrs().items():
+                for snic in snics:
+                    if snic.address == local_ip:
+                        # Dynamically calculate broadcast based on ACTUAL network mask
+                        net = ipaddress.IPv4Interface(f"{local_ip}/{snic.netmask}")
+                        return str(net.network.broadcast_address)
+        except Exception:
+            pass
+        return "255.255.255.255"
 
     # Broadcast the offers (Server side)
     def broadcast(self, server_tcp_port: int, server_name: str, stop_event: threading.Event = None) -> None:
